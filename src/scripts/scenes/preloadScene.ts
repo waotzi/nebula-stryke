@@ -4,14 +4,12 @@ export default class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.video('space', 'assets/title_screen.mp4');
-    this.load.video('space2', 'assets/cutscene_title.mp4');
-    this.load.image('panel', 'assets/ui_panel.png');
-    this.load.image('rocket', 'assets/rocket.png');
+    this.load.video('title_loop', 'assets/videos/title_loop.mp4');
+    this.load.video('intro', 'assets/videos/intro.mp4');
   }
 
   create() {
-    this.scene.start('MainScene')
+    this.scene.start('CharacterScene')
 
     /**
      * This is how you would dynamically import the mainScene class (with code splitting),

@@ -2,6 +2,7 @@ import * as Phaser from 'phaser'
 import { enable3d, Canvas } from '@enable3d/phaser-extension'
 import MainScene from './scenes/mainScene'
 import PreloadScene from './scenes/preloadScene'
+import CharacterScene from './scenes/characterScene'
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,
@@ -12,7 +13,7 @@ const config: Phaser.Types.Core.GameConfig = {
     width: 480,
     height: 800
   },
-  scene: [PreloadScene, MainScene],
+  scene: [PreloadScene, MainScene, CharacterScene],
   ...Canvas()
 }
 
