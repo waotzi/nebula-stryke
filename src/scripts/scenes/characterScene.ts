@@ -1,33 +1,45 @@
 import { Scene3D, ExtendedObject3D } from '@enable3d/phaser-extension'
+import { OrthographicCamera, PerspectiveCamera } from 'three'
 
 export default class CharacterScene extends Scene3D {
-  videoCutscene : Phaser.GameObjects.Video
-  rocketSelector : Phaser.GameObjects.Sprite
-  part = 0
   drone: ExtendedObject3D
-  
+  camera: PerspectiveCamera | OrthographicCamera
+  created: boolean
+  droneVelocityX: number = 0
+  groundH: number = 5000
   constructor() {
     super({ key: 'CharacterScene' })
   }
 
   init() {
     this.accessThirdDimension({ antialias: true })
-    this.input.setDefaultCursor('url(assets/cursors/cursor2.png), pointer');    
-    this.third.load.preload('metal', '/assets/textures/metal001.jpg')
-
+    this.input.setDefaultCursor('url(assets/cursors/cursor.png), pointer');    
+    this.third.load.preload('ground', '/assets/textures/ground001.jpg')
   }
   
   async create() {
-    const { camera, lights } = await this.third.warpSpeed('-ground', '-sky', '-orbitControls')
+    const { camera, lights } = await this.third.warpSpeed('camera', 'light')
     if (lights) {
-        lights.hemisphereLight.color.r = 8
-        lights.hemisphereLight.color.b = 8
-        lights.hemisphereLight.color.g = 8
+        lights.hemisphereLight.color.r = 3
+        lights.hemisphereLight.color.b = 3
+        lights.hemisphereLight.color.g = 3
     }
     if (camera) {
-        camera.position.set(0, 20, 50)
+        camera.position.set(0, 50, 50)
         camera.lookAt(0, 10, 0)
+        this.camera = camera
     }
+    this.third.load.texture('ground').then(ground => {
+        const groundW = 200
+        ground.wrapS = ground.wrapT = 1 // RepeatWrapping
+        ground.repeat.set(1, this.groundH / groundW)
+
+        // BUG: To add shadows to your ground, set transparent = true
+        this.third.physics.add.ground({ width: groundW, height: this.groundH, y: -1, z: 0 }, { phong: { map: ground, transparent: true } })
+        this.third.physics.add.ground({ width: 1000, height: this.groundH, y: -10, z: 0 }, { lambert: { color: 0x000000 } })
+    })
+
+    
     this.drone = new ExtendedObject3D()
     const pos = { x: 0, y: 0, z: 0 }
 
@@ -36,34 +48,39 @@ export default class CharacterScene extends Scene3D {
         this.drone.position.set(pos.x, pos.y, pos.z)
         this.drone.rotateY(-Math.PI / 2)
         this.drone.scale.set(0.5, 0.5, 0.5)
-        this.third.load.texture('metal').then(metal => {
-            metal.wrapS = metal.wrapT = 1000 // RepeatWrapping
-            metal.offset.set(0, 0)
-            metal.repeat.set(2, 2)    
-     
-           this.third.add.existing(this.drone)
-        })
+
+        this.third.add.existing(this.drone)
     })
 
-    /*this.third.load.texture('metal').then(grass => {
-        grass.wrapS = grass.wrapT = 1000 // RepeatWrapping
-        grass.offset.set(0, 0)
-        grass.repeat.set(2, 2)
-
-        // BUG: To add shadows to your ground, set transparent = true
-        this.third.physics.add.ground({ width: 20, height: 20, y: 0 }, { phong: { map: grass, transparent: true } })
-      })*/
-
-
+    
+    this.created = true
   }
 
-  update() {
+  update(time, delta) {
     const pointer = this.input.activePointer;
-    const pointerX = pointer.position.x
-    console.log(pointer.position.x)
-    if (this.drone) {
-        if (pointerX > 0 && pointerX < this.scale.width)
-            this.drone.position.x = (pointer.position.x - this.scale.width * 0.5) * 0.08
+    const pointerX = pointer.position.x;
+    
+    if (this.created) {
+        if (pointerX > 0 && pointerX < this.scale.width) {
+            const targetX = (pointerX - this.scale.width * 0.5) * 0.05;
+      
+            // Calculate the distance remaining to the target position
+            const moveDistanceX = (targetX - this.drone.position.x) * delta / 200;
+            
+            
+            this.drone.position.x += moveDistanceX;
+
+        }  else {
+            // Stop the drone's movement if the pointer is outside the valid range
+            this.droneVelocityX = 0;
+        }
+        
+      if (this.drone.position.z > -this.groundH / 2 ) {
+        const velocityZ = 1; // Adjust the velocity as needed
+        this.drone.position.z -= velocityZ * delta / 60;
+
+        this.camera.position.z = this.drone.position.z + 40
+      }
     }
   }
 }
